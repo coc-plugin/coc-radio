@@ -1,0 +1,60 @@
+{
+  "name": "coc-radio",
+  "version": "0.0.4",
+  "description": "coc internet radio player",
+  "author": "chuyanlong <a1008611abcd@126.com>",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "keywords": [
+    "coc.nvim"
+  ],
+  "engines": {
+    "coc": "^0.0.82"
+  },
+  "scripts": {
+    "watch": "node esbuild.mjs --watch",
+    "build": "node esbuild.mjs",
+    "prepare": "node esbuild.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "coc.nvim": "^0.0.83-next.18",
+    "esbuild": "^0.19.8",
+    "typescript": "^5.3.3"
+  },
+  "activationEvents": [
+    "*"
+  ],
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "coc-radio configuration",
+      "properties": {
+        "radio.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable coc-radio extension"
+        },
+        "radio.favorites": {
+          "type": "array",
+          "default": [],
+          "description": "coc-radio favorites"
+        },
+        "radio.country": {
+          "type": "string",
+          "default": "China",
+          "description": "coc-radio country"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "coc-radio.updateDB",
+        "title": "update db file"
+      }
+    ]
+  },
+  "dependencies": {
+    "node-mpv": "^1.5.0"
+  }
+}
