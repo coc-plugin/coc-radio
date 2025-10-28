@@ -46,17 +46,6 @@ export interface Station {
   status: 'load' | 'play' | 'paused';
 }
 
-interface Countrie {
-  name: string;
-  count: number;
-  countrycode: string;
-}
-
-interface Tag {
-  name: string;
-  stationcount: number;
-}
-
 class AudioBase {
   base_url = '';
   async getBaseUrls() {
@@ -84,62 +73,12 @@ class AudioBase {
     const res = await fetch(u);
     return res.json();
   }
-  //合并参数
   mergeOptions(defaultOptions: any, options: any) {
     return { ...defaultOptions, ...options };
   }
 }
 
 class Audio extends AudioBase {
-  async getCountries(
-    options: {
-      order?: string;
-      reverse?: boolean;
-      hidebroken?: boolean;
-      offset?: number;
-      limit?: number;
-    } = {}
-  ): Promise<Countrie[]> {
-    const data: any[] = await this.request(
-      '/json/countries',
-      this.mergeOptions(
-        {
-          order: 'name',
-          reverse: true,
-          hidebroken: true,
-        },
-        options
-      )
-    );
-    return data.map((item) => {
-      return {
-        name: item.name,
-        count: item.stationcount,
-        countrycode: item.iso_3166_1,
-      };
-    });
-  }
-  async getTags(
-    options: {
-      order?: string;
-      reverse?: boolean;
-      hidebroken?: boolean;
-      offset?: number;
-      limit?: number;
-    } = {}
-  ): Promise<Tag[]> {
-    return this.request(
-      '/json/tags',
-      this.mergeOptions(
-        {
-          order: 'name',
-          reverse: true,
-          hidebroken: true,
-        },
-        options
-      )
-    );
-  }
   async getStations(
     options: {
       country?: string;

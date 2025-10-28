@@ -185,8 +185,13 @@ export default class Radio extends BasicList {
   }
   public async updateDB() {
     await this.ensureFileExists(this.dbPath);
+    const config = workspace.getConfiguration();
+    const country = config.get<string>('radio.country') || 'China';
     const audioRequest = new AudioRequest();
-    const stations = await audioRequest.getStations();
+    const stations = await audioRequest.getStations({
+      country,
+    });
+    this.dbData = stations;
     await writeFile(this.dbPath, JSON.stringify(stations));
     window.showInformationMessage('coc-radio db update completed');
     return stations;
