@@ -2,6 +2,15 @@
 
 coc internet radio player.
 
+## ✨ Features
+
+- 🔥 Support switching countries
+- 💤 Support bookmarking broadcasts
+
+## ⚡️ Requirements
+
+- Mpv (mpv is a free (as in freedom) media player for the command line)
+
 ## Install
 
 ```vim
