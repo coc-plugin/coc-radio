@@ -23,6 +23,8 @@ export default class Radio extends BasicList {
   public dbPath = '';
   public dbData: Station[] = [];
   public playerStatus: StatusBarItem | null = null;
+  public player: any;
+  public isRuning: boolean = false;
   constructor(context: ExtensionContext) {
     super();
     this.dbPath = path.join(context.storagePath, 'db.json');
@@ -30,112 +32,130 @@ export default class Radio extends BasicList {
       this.playerStatus.dispose();
       this.playerStatus = null;
     }
+
+    context.subscriptions.push(
+      commands.registerCommand('radio.start', async () => {
+        const player = new Mpv({
+          verbose: true,
+          audio_only: true,
+          auto_restart: true,
+        });
+        this.player = player;
+        this.isRuning = true;
+        window.showInformationMessage('radio started');
+        this.initRadioStatus();
+        player.on('stopped', () => {
+          this.initRadioStatus();
+        });
+        this.addAction(
+          'test',
+          async (item) => {
+            if (item.data?.status === 'load') {
+              await player.load(item.data?.url);
+            }
+            if (item?.data?.status === 'play') {
+              await player.pause();
+            }
+            if (item?.data?.status === 'paused') {
+              await player.resume();
+            }
+            this.updateRadioStatus(item as any);
+            if (this.playerStatus) {
+              this.playerStatus.text = `${this.truncateString(item.data?.name, 20)}`;
+              this.playerStatus.show();
+            }
+          },
+          {
+            persist: true,
+            tabPersist: true,
+            reload: true,
+            parallel: true,
+          }
+        );
+
+        this.addAction('play', async (item) => {
+          let status = 'load';
+          if (item.data?.status === 'load') {
+            await player.load(item.data?.url);
+            status = 'play';
+          }
+          if (item?.data?.status === 'play') {
+            await player.pause();
+            status = 'pause';
+          }
+          if (item?.data?.status === 'paused') {
+            await player.resume();
+            status = 'play';
+          }
+          this.updateRadioStatus(item as any);
+          if (this.playerStatus) {
+            this.playerStatus.text =
+              status !== 'pause' ? `${this.truncateString(item.data?.name, 20)}` : 'radioPause';
+            this.playerStatus.show();
+          }
+        });
+
+        this.addAction(
+          'stop',
+          async () => {
+            if (!player) return;
+            await player.stop();
+            this.initRadioStatus();
+            if (this.playerStatus) {
+              this.playerStatus.hide();
+            }
+          },
+          {
+            persist: true,
+            tabPersist: true,
+            reload: true,
+            parallel: true,
+          }
+        );
+
+        this.addAction(
+          'favorite',
+          async (item) => {
+            const config = workspace.getConfiguration();
+            const collects = config.get('radio.favorites') as string[];
+            let ids = [...collects];
+            if (!collects.includes(item.data?.id)) {
+              ids.push(item.data?.id);
+            } else {
+              ids = ids.filter((r) => !r.includes(item.data?.id));
+            }
+            await config.update('radio.favorites', ids, true);
+          },
+          {
+            persist: true,
+            tabPersist: true,
+            reload: true,
+            parallel: true,
+          }
+        );
+      })
+    );
+    context.subscriptions.push(
+      commands.registerCommand('radio.stop', async () => {
+        if (this.player) {
+          this.player?.stop();
+          this.player = null;
+        }
+        if (this.playerStatus) {
+          this.playerStatus.text = '';
+          this.playerStatus.dispose();
+          this.playerStatus.hide();
+        }
+        this.dbData = [];
+        this.isRuning = false;
+        window.showWarningMessage('radio stopped');
+      })
+    );
     context.subscriptions.push(
       commands.registerCommand('radio.updateDB', async () => {
         window.showWarningMessage('radio db update started ...');
         await this.updateDB();
       })
-    );
-    const player = new Mpv({
-      verbose: true,
-      audio_only: true,
-      auto_restart: true,
-    });
-
-    this.initRadioStatus();
-    player.on('stopped', () => {
-      this.initRadioStatus();
-      window.showWarningMessage('radio stopped');
-    });
-
-    this.addAction(
-      'test',
-      async (item) => {
-        let status = 'load';
-        if (item.data?.status === 'load') {
-          await player.load(item.data?.url);
-          status = 'playing';
-        }
-        if (item?.data?.status === 'play') {
-          await player.pause();
-          status = 'pause';
-        }
-        if (item?.data?.status === 'paused') {
-          await player.resume();
-          status = 'playing';
-        }
-        this.updateRadioStatus(item as any);
-        if (this.playerStatus) {
-          this.playerStatus.text = `${item.data?.name} - ${status}`;
-          this.playerStatus.show();
-        }
-      },
-      {
-        persist: true,
-        tabPersist: true,
-        reload: true,
-        parallel: true,
-      }
-    );
-
-    this.addAction('play', async (item) => {
-      let status = 'load';
-      if (item.data?.status === 'load') {
-        await player.load(item.data?.url);
-        status = 'playing';
-      }
-      if (item?.data?.status === 'play') {
-        await player.pause();
-        status = 'pause';
-      }
-      if (item?.data?.status === 'paused') {
-        await player.resume();
-        status = 'playing';
-      }
-      this.updateRadioStatus(item as any);
-      if (this.playerStatus) {
-        this.playerStatus.text = `${item.data?.name} - ${status}`;
-        this.playerStatus.show();
-      }
-    });
-
-    this.addAction(
-      'stop',
-      async () => {
-        if (!player) return;
-        await player.stop();
-        this.initRadioStatus();
-        if (this.playerStatus) {
-          this.playerStatus.hide();
-        }
-      },
-      {
-        persist: true,
-        tabPersist: true,
-        reload: true,
-        parallel: true,
-      }
-    );
-
-    this.addAction(
-      'favorite',
-      async (item) => {
-        const config = workspace.getConfiguration();
-        const collects = config.get('radio.favorites') as string[];
-        let ids = [...collects];
-        if (!collects.includes(item.data?.id)) {
-          ids.push(item.data?.id);
-        } else {
-          ids = ids.filter((r) => !r.includes(item.data?.id));
-        }
-        await config.update('radio.favorites', ids, true);
-      },
-      {
-        persist: true,
-        tabPersist: true,
-        reload: true,
-        parallel: true,
-      }
     );
   }
   public async ensureFileExists(filePath: string, content = '') {
@@ -149,6 +169,17 @@ export default class Radio extends BasicList {
         throw err;
       }
     }
+  }
+  truncateString(str: string, maxLength: number) {
+    if (typeof str !== 'string' || maxLength <= 3) {
+      return str;
+    }
+
+    if (str.length <= maxLength) {
+      return str;
+    }
+
+    return str.substring(0, maxLength - 3) + '...';
   }
   public initRadioStatus() {
     if (this.playerStatus) {
@@ -184,6 +215,9 @@ export default class Radio extends BasicList {
     });
   }
   public async updateDB() {
+    if (this.player) {
+      this.player?.stop();
+    }
     await this.ensureFileExists(this.dbPath);
     const config = workspace.getConfiguration();
     const country = config.get<string>('radio.country') || 'China';
@@ -206,6 +240,12 @@ export default class Radio extends BasicList {
   }
 
   public async loadItems(context: ListContext): Promise<ListItem[]> {
+    if (!this.isRuning) {
+      window.showErrorMessage(
+        'Please execute the `coc-radio.start` command to start the radio first'
+      );
+      return [];
+    }
     const { args } = context;
     let query = '';
     if (args && args.length > 0) {

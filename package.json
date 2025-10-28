@@ -1,6 +1,6 @@
 {
   "name": "coc-radio",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "description": "coc internet radio player",
   "author": "chuyanlong <a1008611abcd@126.com>",
   "license": "MIT",
@@ -296,6 +296,14 @@
       {
         "command": "coc-radio.updateDB",
         "title": "update db file"
+      },
+      {
+        "command": "coc-radio.start",
+        "title": "start radio"
+      },
+      {
+        "command": "coc-radio.stop",
+        "title": "stop radio"
       }
     ]
   },

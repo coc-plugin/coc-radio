@@ -26,6 +26,8 @@ coc internet radio player.
 ## Commands
 
 - `coc-radio.updateDB`: update db file
+- `coc-radio.start`: start radio
+- `coc-radio.stop`: stop radio
 
 ---
 
