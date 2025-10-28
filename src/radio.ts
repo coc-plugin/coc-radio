@@ -51,16 +51,24 @@ export default class Radio extends BasicList {
     this.addAction(
       'test',
       async (item) => {
+        let status = 'load';
         if (item.data?.status === 'load') {
           await player.load(item.data?.url);
+          status = '播放中';
         }
         if (item?.data?.status === 'play') {
           await player.pause();
+          status = '暂停';
         }
         if (item?.data?.status === 'paused') {
           await player.resume();
+          status = '播放中';
         }
         this.updateRadioStatus(item as any);
+        if (this.playerStatus) {
+          this.playerStatus.text = `${item.data?.name} - ${status}`;
+          this.playerStatus.show();
+        }
       },
       {
         persist: true,
