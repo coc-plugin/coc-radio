@@ -45,7 +45,7 @@ export default class Radio extends BasicList {
     this.initRadioStatus();
     player.on('stopped', () => {
       this.initRadioStatus();
-      window.showWarningMessage('已停止，状态：stopped');
+      window.showWarningMessage('radio stopped');
     });
 
     this.addAction(
@@ -54,15 +54,15 @@ export default class Radio extends BasicList {
         let status = 'load';
         if (item.data?.status === 'load') {
           await player.load(item.data?.url);
-          status = '播放中';
+          status = 'playing';
         }
         if (item?.data?.status === 'play') {
           await player.pause();
-          status = '暂停';
+          status = 'pause';
         }
         if (item?.data?.status === 'paused') {
           await player.resume();
-          status = '播放中';
+          status = 'playing';
         }
         this.updateRadioStatus(item as any);
         if (this.playerStatus) {
@@ -82,15 +82,15 @@ export default class Radio extends BasicList {
       let status = 'load';
       if (item.data?.status === 'load') {
         await player.load(item.data?.url);
-        status = '播放中';
+        status = 'playing';
       }
       if (item?.data?.status === 'play') {
         await player.pause();
-        status = '暂停';
+        status = 'pause';
       }
       if (item?.data?.status === 'paused') {
         await player.resume();
-        status = '播放中';
+        status = 'playing';
       }
       this.updateRadioStatus(item as any);
       if (this.playerStatus) {
