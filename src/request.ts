@@ -4,6 +4,7 @@ const resolveSrv = util.promisify(dns.resolveSrv);
 
 export interface Station {
   id: string;
+  label: string;
   changeuuid: string;
   stationuuid: string;
   serveruuid: string;
@@ -41,7 +42,7 @@ export interface Station {
   geo_long: number | null;
   geo_distance: number | null;
   has_extended_info: boolean;
-  collected:number;
+  collected: number;
   status: 'load' | 'play' | 'paused';
 }
 

@@ -4,6 +4,7 @@ import {
   ExtensionContext,
   ListContext,
   ListItem,
+  StatusBarItem,
   window,
   workspace,
 } from 'coc.nvim';
@@ -21,9 +22,14 @@ export default class Radio extends BasicList {
   public readonly defaultAction = 'play';
   public dbPath = '';
   public dbData: Station[] = [];
+  public playerStatus: StatusBarItem | null = null;
   constructor(context: ExtensionContext) {
     super();
     this.dbPath = path.join(context.storagePath, 'db.json');
+    if (this.playerStatus) {
+      this.playerStatus.dispose();
+      this.playerStatus = null;
+    }
     context.subscriptions.push(
       commands.registerCommand('radio.updateDB', async () => {
         window.showWarningMessage('radio db update started ...');
@@ -33,36 +39,35 @@ export default class Radio extends BasicList {
     const player = new Mpv({
       verbose: true,
       audio_only: true,
+      auto_restart: true, // 自动重启
     });
 
     this.initRadioStatus();
-
     player.on('stopped', () => {
       this.initRadioStatus();
       window.showWarningMessage('已停止，状态：stopped');
     });
 
-    this.addAction(
-      'play',
-      async (item) => {
-        if (item.data?.status === 'load') {
-          await player.load(item.data?.url);
-        }
-        if (item?.data?.status === 'play') {
-          await player.pause();
-        }
-        if (item?.data?.status === 'paused') {
-          await player.resume();
-        }
-        this.updateRadioStatus(item as any);
-      },
-      {
-        persist: true,
-        tabPersist: true,
-        reload: true,
-        parallel: true,
+    this.addAction('play', async (item) => {
+      let status = 'load';
+      if (item.data?.status === 'load') {
+        await player.load(item.data?.url);
+        status = '播放中';
       }
-    );
+      if (item?.data?.status === 'play') {
+        await player.pause();
+        status = '暂停';
+      }
+      if (item?.data?.status === 'paused') {
+        await player.resume();
+        status = '播放中';
+      }
+      this.updateRadioStatus(item as any);
+      if (this.playerStatus) {
+        this.playerStatus.text = `${item.data?.name} - ${status}`;
+        this.playerStatus.show();
+      }
+    });
 
     this.addAction(
       'stop',
@@ -70,6 +75,9 @@ export default class Radio extends BasicList {
         if (!player) return;
         await player.stop();
         this.initRadioStatus();
+        if (this.playerStatus) {
+          this.playerStatus.hide();
+        }
       },
       {
         persist: true,
@@ -113,12 +121,20 @@ export default class Radio extends BasicList {
     }
   }
   public initRadioStatus() {
-    this.dbData = this.dbData.map((item) => {
-      item.status = 'load';
-      return item;
-    }) || [];
+    if (this.playerStatus) {
+      this.playerStatus.text = '';
+      this.playerStatus.dispose();
+      this.playerStatus.hide();
+    }
+    this.playerStatus = window.createStatusBarItem(0, { progress: false });
+    this.dbData =
+      this.dbData.map((item) => {
+        item.status = 'load';
+        return item;
+      }) || [];
   }
   public updateRadioStatus(item: StationListItem) {
+    if (!this.playerStatus) return;
     this.dbData = this.dbData.map((t) => {
       const status = item.data.status;
       if (t.stationuuid === item.data.stationuuid) {
@@ -176,7 +192,7 @@ export default class Radio extends BasicList {
         if (ext.name.indexOf(query) < 0) continue;
       }
       items.push({
-        label: ext.name,
+        label: ext.label,
         data: {
           ...ext,
           name: ext.name,
@@ -218,7 +234,7 @@ export default class Radio extends BasicList {
     const status = station.status || 'load';
     return {
       ...station,
-      name: `[${status}]${favorite} ${station.name.replace(/\s/g, '-')}`,
+      label: `[${status}]${favorite} ${station.name.replace(/\s/g, '-')}`,
       collected: isCollected,
       id: station.stationuuid,
       status,
