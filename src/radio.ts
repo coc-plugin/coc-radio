@@ -39,7 +39,7 @@ export default class Radio extends BasicList {
     const player = new Mpv({
       verbose: true,
       audio_only: true,
-      auto_restart: true, // 自动重启
+      auto_restart: true,
     });
 
     this.initRadioStatus();
@@ -47,6 +47,28 @@ export default class Radio extends BasicList {
       this.initRadioStatus();
       window.showWarningMessage('已停止，状态：stopped');
     });
+
+    this.addAction(
+      'test',
+      async (item) => {
+        if (item.data?.status === 'load') {
+          await player.load(item.data?.url);
+        }
+        if (item?.data?.status === 'play') {
+          await player.pause();
+        }
+        if (item?.data?.status === 'paused') {
+          await player.resume();
+        }
+        this.updateRadioStatus(item as any);
+      },
+      {
+        persist: true,
+        tabPersist: true,
+        reload: true,
+        parallel: true,
+      }
+    );
 
     this.addAction('play', async (item) => {
       let status = 'load';
