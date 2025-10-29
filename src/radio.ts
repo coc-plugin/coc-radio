@@ -241,9 +241,7 @@ export default class Radio extends BasicList {
 
   public async loadItems(context: ListContext): Promise<ListItem[]> {
     if (!this.isRuning) {
-      window.showErrorMessage(
-        'Please execute the `coc-radio.start` command to start the radio first'
-      );
+      window.showErrorMessage('Please execute the `radio.start` command to start the radio first');
       return [];
     }
     const { args } = context;
